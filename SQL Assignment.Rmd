@@ -1,0 +1,163 @@
+---
+title: "SQL Assignment 2"
+output: html_document
+---
+
+- **Problem 1: Weather Delays**   
+    This problem asked a very simplistic question, to find which weather conditions were associated with depature delays. As delays can be caused by many factors, we are hoping that some correlation can be ascertained from the data. So, to start we will make a couple of assumptions. First, we are linking the data based on the year, day, and hour. We are assuming the weather data permeates such time, ie. multiple weather data corresponds. Also, for simplicity sake, we are going to assume that any delay over 30 is significant, and comparable. So this is the base code that I was working with:
+```
+SELECT  f.tailnum, f.dep_delay, w.*
+FROM flights f 
+JOIN weather w 
+ON f.year = w.year 
+	AND f.month = w.month 
+	AND f.day=w.day 
+	AND f.hour = w.hour
+WHERE f.dep_delay > 30 
+;
+```
+This is a generic left join, I combined the tailnum(as a reference) and dep_delay to the entire weather worklist. This produced 48195 flights with delays. I am going to use this as my base number for analysis purposes.
+
+At this point, I became kind of stumped at how to correlate with weather patterns. It was such a broad category, that I couldn't quite wrap my head around it...
+
+So, I adjusted that base query several times to determing some percentages. By changing the WHERE clause, I found the total number delayed flights with percipitation vs the total number of flights. I jus changed the where clause in that statment too: 
+
+```
+WHERE dep_delay > 30 AND precip > 0 
+```
+and compared that 5425 delayed flights to this WHERE clause:
+
+```
+WHERE dep_delay > 30 AND precip > 0 
+```
+which gave me a total of 18099 delayed flights or roughly 30% of flights delayed because of Precipitation.
+
+I repeated this with several more Where clause (wind_speed, gust, and visibility and got the following)
+
+Weather|Delayed|Total|Percent
+-------|-------|-----|-------
+Preciptation|5425|18099|30%
+Wind_Speed > 7|32557|194263|16%
+Wind_Gust > 7|36891 |224377|16%
+Visibility < 5|5749|20403|28%
+
+From the chart above, it would appear wind doesn't play as much of a factor in delayed flights. However, visibility and Percipitation appear to play a greater role. It is also possibly that the visibility and the percipitation are somewhat correlated (as it will be cloudy on days it rains.)
+
+
+- **Problem 2: Older Planes** 
+For this problem, I decided it would be best to limit the number of columns to just the flight number and year. Again, I am assuming anything over 30 minutes is a significant delay, and am using that as my criteria for observation. The queries I used are as follows:
+
+```
+SELECT p.year, COUNT(f.tailnum)
+FROM flights f
+JOIN planes p 
+ON f.tailnum = p.tailnum
+GROUP BY p.year 
+ORDER BY p.year
+;
+```
+This query shows the total number of flights by year the plane was made. 
+
+```
+SELECT p.year, COUNT(f.tailnum) 
+FROM flights f
+JOIN planes p 
+ON f.tailnum = p.tailnum
+WHERE dep_delay > 30 
+GROUP BY p.year
+ORDER BY p.year
+;
+```
+I then (in Excel) took the output of those queries and found the percentage of flights delayed over 3o minutes the result for the last 23 years is as follows:
+
+Year|Delay|Total  |Percentage
+----|-----|-------|----------
+1988|	451	|	3856	|	11.70%
+1989|	379	|	3116	|	12.16%
+1990|	673	|	5394	|	12.48%
+1991|	749	|	6002	|	12.48%
+1992|	937	|	7696	|	12.18%
+1993|	453	|	3358	|	13.49%
+1994|	334	|	2714	|	12.31%
+1995|	184	|	1378	|	13.35%
+1996|	215	|	1799	|	11.95%
+1997|	635	|	6008	|	10.57%
+1998|	2574|	17231	|	14.94%
+1999|	2864|	19373	|	14.78%
+2000|	3128|	22334	|	14.01%
+2001|	4181|	26889	|	15.55%
+2002|	4031|	23741	|	16.98%
+2003|	2558|	15069	|	16.98%
+2004|	2763|	15706	|	17.59%
+2005|	2408|	14369	|	16.76%
+2006|	2127|	13203	|	16.11%
+2007|	2418|	15300	|	15.80%
+2008|	2674|	17878	|	14.96%
+2009|	870	|	6632	|	13.12%
+2010|	529	|	3797	|	13.93%
+2011|	814	|	6046	|	13.46%
+2012|	815	|	7252	|	11.24%
+2013|	589	|	4630	|	12.72%
+
+
+According to these results, it seems that the year does effect the number of delayed plans, but it seems the highest number of delayed flights come from planes made between 2000 and 2007. Of course this could be random variance as there is more flights from planes during those years. 
+
+- **Problem 3: Airline delays**
+I was kind of curious to see if there was any significant increase in the number of delays from flights by airline. I used a similar query to the one previously except this time I decided to compare the arrival and departure delays. My queries are as follows:
+
+** Arrival Delay**
+```
+SELECT a.name, COUNT(f.tailnum)
+FROM flights f 
+JOIN airlines a 
+ON a.carrier = f.carrier
+WHERE arr_delay > 30
+GROUP BY a.name
+ORDER BY a.name
+;
+```
+**Departure Delay**
+```
+SELECT a.name, COUNT(f.tailnum)
+FROM flights f 
+JOIN airlines a 
+ON a.carrier = f.carrier
+WHERE dep_delay > 30
+GROUP BY a.name
+ORDER BY a.name
+;
+```
+**Total**
+```
+SELECT a.name, COUNT(f.tailnum)
+FROM flights f 
+JOIN airlines a 
+ON a.carrier = f.carrier
+GROUP BY a.name
+ORDER BY a.name
+;
+```
+
+Again I used excel (I know... not the best, still working on this markdown and getting data into R), and found some surprising results see the table below: 
+
+Name|Total|Arrival Delays|Arrival%|Depart Delays|Depart%|%Difference
+----------------|-------|-----|---------|-----|---------|-------
+AirTran Airways	|	3260	|	665	|	20.40%	|	547	|	16.78%	|	-3.62%
+Alaska Airlines Inc.	|	714	|	62	|	8.68%	|	63	|	8.82%	|	0.14%
+American Airlines Inc.	|	32729	|	3827	|	11.69%	|	3537	|	10.81%	|	-0.89%
+Delta Air Lines Inc.	|	48110	|	5533	|	11.50%	|	4982	|	10.36%	|	-1.15%
+Endeavor Air Inc.	|	18460	|	3099	|	16.79%	|	3257	|	17.64%	|	0.86%
+Envoy Air	|	26397	|	4437	|	16.81%	|	3730	|	14.13%	|	-2.68%
+ExpressJet Airlines Inc.	|	54173	|	11666	|	21.53%	|	11655	|	21.51%	|	-0.02%
+Frontier Airlines Inc.	|	685	|	171	|	24.96%	|	130	|	18.98%	|	-5.99%
+Hawaiian Airlines Inc.	|	342	|	19	|	5.56%	|	16	|	4.68%	|	-0.88%
+JetBlue Airways	|	54635	|	9421	|	17.24%	|	8411	|	15.39%	|	-1.85%
+Mesa Airlines Inc.	|	601	|	126	|	20.97%	|	115	|	19.13%	|	-1.83%
+SkyWest Airlines Inc.	|	32	|	6	|	18.75%	|	5	|	15.63%	|	-3.13%
+Southwest Airlines Co.	|	12275	|	1926	|	15.69%	|	2030	|	16.54%	|	0.85%
+United Air Lines Inc.	|	58665	|	7878	|	13.43%	|	7617	|	12.98%	|	-0.44%
+US Airways Inc.	|	20536	|	2048	|	9.97%	|	1613	|	7.85%	|	-2.12%
+Virgin America	|	5162	|	615	|	11.91%	|	583	|	11.29%	|	-0.62%
+
+
+I know from now on I am not going to ride Frontier airline. 
